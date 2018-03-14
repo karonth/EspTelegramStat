@@ -50,6 +50,7 @@ typedef struct {
 chat_counter chats[num_chats];
 //total messages
 uint16_t total=0;
+int durata = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -57,7 +58,7 @@ void setup() {
   randomSeed(analogRead(A0));
 
   // Initialize chats
-  chats[0] = (chat_counter) {"Creatore","00000000",0,0,0};
+  chats[0] = (chat_counter) {"Restarters Torino","00000000",0,0,0};
   chats[1] = (chat_counter) {"AUG Torino","-11111111",0,chats[0].firstled + leds_star,chats[0].address + sizeof(uint16_t)};
   chats[2] = (chat_counter) {"FABLAB TORINO","-22222222",0,chats[1].firstled + leds_star,chats[1].address + sizeof(int)};
   chats[3] = (chat_counter) {"AUG - Telegram playground","-3333333",0,chats[2].firstled + leds_star,chats[2].address + sizeof(uint16_t)};
@@ -115,16 +116,16 @@ void setup() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   //set to yellow
-  starLight(0, num_leds, strip.Color(0,100,50), 10);
+  starLight(0, num_leds, strip.Color(255,255, 255), 50);
 
   for(int i = 0; i < num_chats; i++){
     int start = chats[i].firstled;
     int end = start + leds_star;
     //strip.Color(100,100,100)
 
-  uint8_t color = (i*22)+100;
-    Serial.println(color);
-    starLight(start, end, Wheel(color), 10);
+    //uint8_t color = (i*22)+100;
+    //Serial.println(color);
+    starLight(start, end, strip.Color(128,120, 0), 10);
   }
 }
 
@@ -155,8 +156,13 @@ void loop() {
     int end = start + leds_star;
 
     if(lastNum[i] != chats[i].msgn){
-      //blink white for each message for 200ms
-      starLight(start, end, strip.Color(100,100,100), 100);
+      //la durata della rotazione è proporzionale al numero di messaggi
+      durata = map(chats[i].msgn, 0, total, 1, 6);
+      for(int j = 0; j < durata; j++){
+        starLight(start, end, strip.Color(0,255,128), 1000/durata);
+        starLight(start, end, strip.Color(0,100,50), 1000/durata);
+      }
+      starLight(start, end, strip.Color(128,120, 0), 10);
 
       //write to eeprom
       uint8_t high = (uint8_t) (chats[i].msgn >> 8);
@@ -169,9 +175,10 @@ void loop() {
       EEPROM.commit();
     }
     uint8_t color = (i*22)+100;
-    starLight(start, end, Wheel(color), 10);
+    //starLight(start, end, strip.Color(128,120, 0), 10);
     }  
   }
+  rainbow(20);
 
   /*
   // Some example procedures showing how to display to the pixels:
@@ -191,7 +198,7 @@ void loop() {
 
 void handleNewMessages(int numNewMessages) {
   Serial.println("handleNewMessages");
-  //Serial.println(String(numNewMessages));
+  Serial.println(String(numNewMessages));
 
   for (int i=0; i<numNewMessages; i++) {
     String chat_id = String(bot.messages[i].chat_id);
@@ -225,8 +232,9 @@ void handleNewMessages(int numNewMessages) {
       }
       stats += "Total - "+(String) total +" messages";
       //light up the last star a random color time it receives a status request
-      starLight(num_leds-leds_star, num_leds, Wheel(random(0,255)), 10);
+      starLight(num_leds-leds_star, num_leds, strip.Color(255,0, 0), 10);
       bot.sendMessage(chat_id, stats);
+      starLight(num_leds-leds_star, num_leds, strip.Color(128,120, 0), 10);
     }
 
     if (text == "/start") {
